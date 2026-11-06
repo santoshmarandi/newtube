@@ -1,6 +1,8 @@
 package com.newtube.mobile.ui.playback;
 
+import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
@@ -350,6 +352,18 @@ public final class MiniPlayerBridge {
      * mini bar's PlayerView first so the surface is free.
      */
     public static void expand(Context context) {
+        MobilePlaybackActivity activity = sActivity.get();
+        if (activity != null && !activity.isFinishing() && !activity.isDestroyed()) {
+            Context launchContext = (context instanceof Activity && !((Activity) context).isFinishing())
+                    ? context : activity;
+            Intent intent = new Intent(launchContext, MobilePlaybackActivity.class);
+            intent.addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
+            launchContext.startActivity(intent);
+            if (launchContext instanceof Activity) {
+                ((Activity) launchContext).overridePendingTransition(0, 0);
+            }
+            return;
+        }
         ViewManager.instance(context).startView(PlaybackView.class);
     }
 

@@ -240,8 +240,9 @@ public class ViewManager {
         // an in-task launch only reuses instances within the caller's own task.
         Activity foreground = sForegroundActivity.get();
         boolean playerTarget = activityClass == mViewMapping.get(PlaybackView.class);
+        boolean inPip = playerTarget && PlaybackPresenter.instance(mContext).isInPipMode();
 
-        if (foreground != null && !foreground.isFinishing() && !playerTarget) {
+        if (foreground != null && !foreground.isFinishing() && !inPip) {
             Intent intent = new Intent(foreground, activityClass);
 
             if (sReorderToFrontEnabled) {

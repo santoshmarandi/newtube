@@ -166,10 +166,6 @@ public final class MiniCardSwipe implements View.OnTouchListener {
 
             @Override
             public boolean onSingleTapConfirmed(MotionEvent e) {
-                if (!mControlsVisible) {
-                    showControls();
-                    return true;
-                }
                 mCallback.onExpand();
                 return true;
             }

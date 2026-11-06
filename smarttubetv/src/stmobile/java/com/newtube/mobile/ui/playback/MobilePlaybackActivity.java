@@ -1634,7 +1634,7 @@ public class MobilePlaybackActivity extends MobileActivity
         // and decoding - onStop is not delivered while a PiP window stays visible, so reaching here
         // uninhibited means a real background (home without PiP, screen off, another screen on top).
         // Re-enabled at the top of onResume, before the texture reattach.
-        if (mPlayer != null && !mIsInPip && !mSuppressAutoPip && !isFinishing()) {
+        if (mPlayer != null && !mIsInPip && !mSuppressAutoPip && !MiniPlayerBridge.isActive() && !isFinishing()) {
             setBackgroundAudioMode(true);
         }
 
