@@ -78,6 +78,9 @@ public final class MiniPlayerBridge {
     private static Bitmap sHandoffStill;
     private static Bitmap sMiniEntryStill;
     private static Rect sMiniBounds;
+    private static float sSavedMiniTranslationX = 0f;
+    private static float sSavedMiniTranslationY = 0f;
+    private static boolean sHasSavedMiniPosition = false;
 
     private MiniPlayerBridge() {
     }
@@ -203,6 +206,7 @@ public final class MiniPlayerBridge {
         sHandoffStill = null;
         sMiniEntryStill = null;
         sMiniBounds = null;
+        clearSavedMiniPosition();
     }
 
     /**
@@ -243,6 +247,30 @@ public final class MiniPlayerBridge {
         Rect bounds = sMiniBounds;
         sMiniBounds = null;
         return bounds;
+    }
+
+    public static void setSavedMiniPosition(float translationX, float translationY) {
+        sSavedMiniTranslationX = translationX;
+        sSavedMiniTranslationY = translationY;
+        sHasSavedMiniPosition = true;
+    }
+
+    public static float getSavedMiniTranslationX() {
+        return sSavedMiniTranslationX;
+    }
+
+    public static float getSavedMiniTranslationY() {
+        return sSavedMiniTranslationY;
+    }
+
+    public static boolean hasSavedMiniPosition() {
+        return sHasSavedMiniPosition;
+    }
+
+    public static void clearSavedMiniPosition() {
+        sSavedMiniTranslationX = 0f;
+        sSavedMiniTranslationY = 0f;
+        sHasSavedMiniPosition = false;
     }
 
     /** Consume the captured card frame (single use). */

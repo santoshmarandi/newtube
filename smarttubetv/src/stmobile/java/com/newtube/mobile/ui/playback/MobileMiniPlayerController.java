@@ -96,7 +96,7 @@ public final class MobileMiniPlayerController {
         });
 
         mClose.setOnClickListener(v -> close());
-        // NEWTUBE(motion): or swipe the card away sideways.
+        // NEWTUBE(motion): or drag the card anywhere / swipe away sideways.
         mSwipe = MiniCardSwipe.attach(mBar, new MiniCardSwipe.Callback() {
             @Override
             public boolean canSwipe() {
@@ -107,7 +107,7 @@ public final class MobileMiniPlayerController {
             public void onSwipedAway(float toTranslationX, long durationMs) {
                 close(toTranslationX, durationMs);
             }
-        }, mFrame, mBar);
+        }, mFrame, mBar, mPlayPause);
     }
 
     /**
@@ -164,6 +164,7 @@ public final class MobileMiniPlayerController {
         MiniPlayerBridge.setClosing(null);
         fold();
         MiniPlayerBridge.close();
+        MiniPlayerBridge.clearSavedMiniPosition();
     }
 
     /** The session was handed a new video while the card left: it lives on; the card still goes. */
@@ -209,7 +210,13 @@ public final class MobileMiniPlayerController {
         mBar.setAlpha(1f);
         mBar.setScaleX(1f);
         mBar.setScaleY(1f);
-        mBar.setTranslationX(0f); // a card swiped away (MiniCardSwipe)
+        if (MiniPlayerBridge.hasSavedMiniPosition()) {
+            mBar.setTranslationX(MiniPlayerBridge.getSavedMiniTranslationX());
+            mBar.setTranslationY(MiniPlayerBridge.getSavedMiniTranslationY());
+        } else {
+            mBar.setTranslationX(0f);
+            mBar.setTranslationY(0f);
+        }
 
         mEntryAnimating = animateFromPlayer;
         mTextureHasFrame = false;
@@ -408,19 +415,22 @@ public final class MobileMiniPlayerController {
         float sourceWidth = mActivity.getResources().getDisplayMetrics().widthPixels;
         float sourceHeight = sourceWidth * 9f / 16f;
 
+        float targetTx = MiniPlayerBridge.hasSavedMiniPosition() ? MiniPlayerBridge.getSavedMiniTranslationX() : 0f;
+        float targetTy = MiniPlayerBridge.hasSavedMiniPosition() ? MiniPlayerBridge.getSavedMiniTranslationY() : 0f;
+
         mBar.setPivotX(0f);
         mBar.setPivotY(0f);
         mBar.setScaleX(sourceWidth / width);
         mBar.setScaleY(sourceHeight / height);
-        mBar.setTranslationX(contentLocation[0] - cardLocation[0]);
-        mBar.setTranslationY(contentLocation[1] - cardLocation[1]);
+        mBar.setTranslationX(contentLocation[0] - cardLocation[0] + targetTx);
+        mBar.setTranslationY(contentLocation[1] - cardLocation[1] + targetTy);
 
         setControlsAlpha(0f);
         mBar.animate()
                 .scaleX(1f)
                 .scaleY(1f)
-                .translationX(0f)
-                .translationY(0f)
+                .translationX(targetTx)
+                .translationY(targetTy)
                 .setDuration(ENTRY_DURATION_MS)
                 .setInterpolator(new DecelerateInterpolator())
                 .withEndAction(() -> {
@@ -446,8 +456,13 @@ public final class MobileMiniPlayerController {
         mBar.setPivotY(mBar.getHeight() / 2f);
         mBar.setScaleX(1f);
         mBar.setScaleY(1f);
-        mBar.setTranslationX(0f);
-        mBar.setTranslationY(0f);
+        if (MiniPlayerBridge.hasSavedMiniPosition()) {
+            mBar.setTranslationX(MiniPlayerBridge.getSavedMiniTranslationX());
+            mBar.setTranslationY(MiniPlayerBridge.getSavedMiniTranslationY());
+        } else {
+            mBar.setTranslationX(0f);
+            mBar.setTranslationY(0f);
+        }
         setControlsAlpha(1f);
     }
 

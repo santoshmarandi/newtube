@@ -5743,6 +5743,11 @@ public class MobilePlaybackActivity extends MobileActivity
         float targetX = mContainer.getWidth() - margin - cardW;
         float targetY = mContainer.getHeight() - bottomNav - margin - cardH;
 
+        if (MiniPlayerBridge.hasSavedMiniPosition()) {
+            targetX += MiniPlayerBridge.getSavedMiniTranslationX();
+            targetY += MiniPlayerBridge.getSavedMiniTranslationY();
+        }
+
         mMorphScaleX = scale;
         mMorphScaleY = scale;
         // mVideoArea's translation is expressed in its parent's (unscaled) coordinates. With a

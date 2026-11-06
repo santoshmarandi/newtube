@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.graphics.drawable.AnimationDrawable;
 import android.graphics.drawable.Drawable;
@@ -390,6 +391,7 @@ public class MobileBrowseActivity extends MobileActivity
         // the card for the whole activity-switch latency.
         View.OnClickListener expand = v -> {
             if (!mMiniClosing && MiniPlayerBridge.isActive()) { // not while a closed card leaves
+                publishMiniBounds();
                 MiniPlayerBridge.expand(this);
             }
         };
@@ -405,7 +407,7 @@ public class MobileBrowseActivity extends MobileActivity
         });
 
         findViewById(R.id.mobile_mini_close).setOnClickListener(v -> closeMiniPlayer());
-        // NEWTUBE(motion): or swipe the card away sideways.
+        // NEWTUBE(motion): or drag the card anywhere / swipe away sideways.
         mMiniSwipe = com.newtube.mobile.ui.playback.MiniCardSwipe.attach(mMiniPlayerBar,
                 new com.newtube.mobile.ui.playback.MiniCardSwipe.Callback() {
                     @Override
@@ -417,7 +419,7 @@ public class MobileBrowseActivity extends MobileActivity
                     public void onSwipedAway(float toTranslationX, long durationMs) {
                         closeMiniPlayer(toTranslationX, durationMs);
                     }
-                }, mMiniPlayerFrame, mMiniPlayerBar);
+                }, mMiniPlayerFrame, mMiniPlayerBar, mMiniPlayPause);
     }
 
     /**
@@ -473,6 +475,18 @@ public class MobileBrowseActivity extends MobileActivity
         MiniPlayerBridge.setClosing(null);
         foldMiniCard();
         MiniPlayerBridge.close();
+        MiniPlayerBridge.clearSavedMiniPosition();
+    }
+
+    private void publishMiniBounds() {
+        if (mMiniPlayerBar == null || mMiniPlayerBar.getVisibility() != View.VISIBLE
+                || mMiniPlayerBar.getWidth() <= 0 || mMiniPlayerBar.getHeight() <= 0) {
+            return;
+        }
+        int[] location = new int[2];
+        mMiniPlayerBar.getLocationOnScreen(location);
+        MiniPlayerBridge.setMiniBounds(new Rect(location[0], location[1],
+                location[0] + mMiniPlayerBar.getWidth(), location[1] + mMiniPlayerBar.getHeight()));
     }
 
     /** The session was handed a new video while the card left: it lives on; the card still goes. */
@@ -509,7 +523,13 @@ public class MobileBrowseActivity extends MobileActivity
         mMiniPlayerBar.setAlpha(1f);
         mMiniPlayerBar.setScaleX(1f);
         mMiniPlayerBar.setScaleY(1f);
-        mMiniPlayerBar.setTranslationX(0f);
+        if (MiniPlayerBridge.hasSavedMiniPosition()) {
+            mMiniPlayerBar.setTranslationX(MiniPlayerBridge.getSavedMiniTranslationX());
+            mMiniPlayerBar.setTranslationY(MiniPlayerBridge.getSavedMiniTranslationY());
+        } else {
+            mMiniPlayerBar.setTranslationX(0f);
+            mMiniPlayerBar.setTranslationY(0f);
+        }
         mMiniPlayerBar.setVisibility(View.VISIBLE);
         updateMiniPlayPauseIcon(player);
 
@@ -701,7 +721,13 @@ public class MobileBrowseActivity extends MobileActivity
         mMiniPlayerBar.setAlpha(1f);
         mMiniPlayerBar.setScaleX(1f);
         mMiniPlayerBar.setScaleY(1f);
-        mMiniPlayerBar.setTranslationX(0f);
+        if (MiniPlayerBridge.hasSavedMiniPosition()) {
+            mMiniPlayerBar.setTranslationX(MiniPlayerBridge.getSavedMiniTranslationX());
+            mMiniPlayerBar.setTranslationY(MiniPlayerBridge.getSavedMiniTranslationY());
+        } else {
+            mMiniPlayerBar.setTranslationX(0f);
+            mMiniPlayerBar.setTranslationY(0f);
+        }
         mMiniButtonsFadePending = false;
         setMiniButtonsAlpha(1f);
     }
