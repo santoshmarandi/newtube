@@ -21,8 +21,10 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -240,6 +242,14 @@ public class MobileSearchActivity extends MobileActivity
     private void setupSuggestions() {
         mTagAdapter = new SearchTagAdapter(this::onTagClicked, this::onTagLongClicked, this::onTagInserted);
         mSuggestions.setAdapter(mTagAdapter);
+        mSuggestions.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    hideKeyboard();
+                }
+            }
+        });
     }
 
     private void setupGrid() {
@@ -261,6 +271,14 @@ public class MobileSearchActivity extends MobileActivity
         // Next cards' thumbnails decoded before they scroll in (no grey card + fade on a fling).
         com.newtube.mobile.ui.common.FeedThumbnailPreloader.attach(mGrid, mAdapter);
         mGrid.addOnScrollListener(new RecyclerView.OnScrollListener() {
+            @Override
+            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
+                if (newState == RecyclerView.SCROLL_STATE_DRAGGING) {
+                    hideKeyboard();
+                    clearSearchFocus();
+                }
+            }
+
             @Override
             public void onScrolled(@NonNull RecyclerView recyclerView, int dx, int dy) {
                 // dy == 0: a layout pass changed the visible range, not the user.
@@ -324,6 +342,8 @@ public class MobileSearchActivity extends MobileActivity
         mSearchInput.setOnFocusChangeListener((v, hasFocus) -> {
             if (hasFocus) {
                 loadSearchTags(getSearchText());
+            } else {
+                mSuggestions.setVisibility(View.GONE);
             }
         });
     }
@@ -333,7 +353,7 @@ public class MobileSearchActivity extends MobileActivity
     // ---------------------------------------------------------------------------------
 
     private void loadSearchTags(String query) {
-        if (mTagsProvider == null) {
+        if (mTagsProvider == null || !mSearchInput.hasFocus()) {
             return;
         }
 
@@ -344,15 +364,14 @@ public class MobileSearchActivity extends MobileActivity
         final int generation = ++mSuggestGeneration;
 
         mTagsProvider.search(query, results -> runOnUiThread(() -> {
-            if (generation != mSuggestGeneration) {
-                return; // a newer request is in flight/rendered - this response is stale
+            if (generation != mSuggestGeneration || !mSearchInput.hasFocus()) {
+                return; // a newer request is in flight/rendered - this response is stale or input lost focus
             }
             mTagAdapter.setHistoryMode(historyMode);
             mTagAdapter.setTags(results);
             // Only surface the overlay while the user is actually editing the query — a slow
             // suggest response must not cover results that were submitted in the meantime.
-            mSuggestions.setVisibility(mTagAdapter.isEmpty() || !mSearchInput.hasFocus()
-                    ? View.GONE : View.VISIBLE);
+            mSuggestions.setVisibility(mTagAdapter.isEmpty() ? View.GONE : View.VISIBLE);
         }));
     }
 
@@ -435,10 +454,18 @@ public class MobileSearchActivity extends MobileActivity
         mPendingFailure = -1;
         mSearchMessage.setVisibility(View.GONE);
         hideKeyboard();
-        mSearchInput.clearFocus();
-        mSuggestions.setVisibility(View.GONE);
+        clearSearchFocus();
         mTagAdapter.clearTags();
         mPresenter.onSearch(normalized);
+    }
+
+    private void clearSearchFocus() {
+        mSearchInput.clearFocus();
+        View root = findViewById(R.id.mobile_search_root);
+        if (root != null) {
+            root.requestFocus();
+        }
+        mSuggestions.setVisibility(View.GONE);
     }
 
     /** Pure submission predicate kept package-visible for the hardware/IME regression test. */
@@ -460,6 +487,8 @@ public class MobileSearchActivity extends MobileActivity
         if (mPresenter == null) {
             return;
         }
+        hideKeyboard();
+        clearSearchFocus();
         mPresenter.onVideoItemSelected(video);
         mPresenter.onVideoItemClicked(video);
     }
@@ -566,6 +595,11 @@ public class MobileSearchActivity extends MobileActivity
     }
 
     private void hideKeyboard() {
+        WindowInsetsControllerCompat controller =
+                WindowCompat.getInsetsController(getWindow(), mSearchInput);
+        if (controller != null) {
+            controller.hide(WindowInsetsCompat.Type.ime());
+        }
         InputMethodManager imm = (InputMethodManager) getSystemService(INPUT_METHOD_SERVICE);
         if (imm != null) {
             imm.hideSoftInputFromWindow(mSearchInput.getWindowToken(), 0);
@@ -644,13 +678,12 @@ public class MobileSearchActivity extends MobileActivity
     // NOTE: back normally flows OnBackPressedDispatcher -> MobileActivity.finish() ->
     // finishReally() below, which is the single place SearchPresenter.onFinish() is invoked.
     // (Previously it was also called here on back, so onFinish() ran twice per back press.)
-    // The only local back handling: when the suggestion overlay covers existing RESULTS,
-    // the first back dismisses the overlay instead of leaving the screen (YouTube-style).
+    // The only local back handling: when the suggestion overlay or search input focus is active,
+    // the first back dismisses the overlay / clears focus instead of leaving the screen (YouTube-style).
     private void handleBack() {
-        if (mSuggestions.getVisibility() == View.VISIBLE && !mVideos.isEmpty()) {
+        if (mSuggestions.getVisibility() == View.VISIBLE || mSearchInput.hasFocus()) {
             hideKeyboard();
-            mSearchInput.clearFocus();
-            mSuggestions.setVisibility(View.GONE);
+            clearSearchFocus();
             return;
         }
         finish();
