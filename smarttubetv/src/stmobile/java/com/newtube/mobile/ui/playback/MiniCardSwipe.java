@@ -71,6 +71,8 @@ public final class MiniCardSwipe implements View.OnTouchListener {
     @Nullable private View mPlayPauseView;
     @Nullable private View mCloseView;
     @Nullable private View mProgressView;
+    @Nullable private View mScrimView;
+    @Nullable private View mExpandView;
 
     public static MiniCardSwipe attach(View card, Callback callback, View... touchTargets) {
         MiniCardSwipe swipe = new MiniCardSwipe(card, callback);
@@ -83,9 +85,16 @@ public final class MiniCardSwipe implements View.OnTouchListener {
     }
 
     public void setControlsViews(@Nullable View playPause, @Nullable View close, @Nullable View progress) {
+        setControlsViews(playPause, close, progress, null, null);
+    }
+
+    public void setControlsViews(@Nullable View playPause, @Nullable View close, @Nullable View progress,
+                                 @Nullable View scrim, @Nullable View expand) {
         mPlayPauseView = playPause;
         mCloseView = close;
         mProgressView = progress;
+        mScrimView = scrim;
+        mExpandView = expand;
         scheduleAutoHide();
     }
 
@@ -111,10 +120,18 @@ public final class MiniCardSwipe implements View.OnTouchListener {
     }
 
     private void animateControlsAlpha(float alpha) {
-        View[] views = new View[] {mPlayPauseView, mCloseView, mProgressView};
-        for (View v : views) {
+        boolean interactive = alpha > 0f;
+        View[] interactiveViews = new View[] {mPlayPauseView, mCloseView, mScrimView, mExpandView};
+        for (View v : interactiveViews) {
             if (v != null) {
-                v.animate().alpha(alpha).setDuration(180).start();
+                if (interactive) {
+                    v.setVisibility(View.VISIBLE);
+                }
+                v.animate().alpha(alpha).setDuration(180).withEndAction(() -> {
+                    if (!interactive) {
+                        v.setVisibility(View.GONE);
+                    }
+                }).start();
             }
         }
     }

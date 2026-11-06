@@ -37,7 +37,9 @@
         android:layout_height="@dimen/mobile_title_bar_height"
         android:background="?attr/newtubeColorBackground"
         android:ellipsize="end"
+        android:fontFamily="sans-serif-medium"
         android:gravity="center_vertical|start"
+        android:letterSpacing="-0.02"
         android:maxLines="1"
         android:paddingStart="16dp"
         android:text="@string/app_name"
@@ -274,8 +276,8 @@
         android:focusable="true"
         android:visibility="gone"
         app:cardBackgroundColor="@android:color/black"
-        app:cardCornerRadius="12dp"
-        app:cardElevation="8dp"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="10dp"
         app:layout_constraintBottom_toTopOf="@id/mobile_bottom_nav"
         app:layout_constraintEnd_toEndOf="parent"
         tools:visibility="visible">
@@ -302,26 +304,47 @@
 
             </androidx.media3.ui.AspectRatioFrameLayout>
 
+            <!-- YouTube-style dark scrim over video when controls are active -->
+            <View
+                android:id="@+id/mobile_mini_scrim"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#59000000" />
+
+            <!-- Expand button at top-start -->
+            <ImageButton
+                android:id="@+id/mobile_mini_expand"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="top|start"
+                android:layout_margin="3dp"
+                android:background="@drawable/bg_mini_scrim_circle_touch"
+                android:contentDescription="@string/mobile_mini_expand"
+                android:padding="9dp"
+                android:src="@drawable/ic_player_fullscreen"
+                android:tint="@color/mobile_player_on_video" />
+
+            <!-- Play/pause at center -->
             <ImageButton
                 android:id="@+id/mobile_mini_play_pause"
-                android:layout_width="40dp"
-                android:layout_height="40dp"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
                 android:layout_gravity="center"
                 android:background="@drawable/bg_mini_scrim_circle"
                 android:contentDescription="@string/mobile_mini_play_pause"
-                android:padding="9dp"
+                android:padding="10dp"
                 android:src="@drawable/ic_player_pause" />
 
-            <!-- 48dp touch target, wholly inside the card (a child outside its parent gets no touches), around the same 40dp circle (was 28dp, then 40dp - NEWTUBE(touch)). -->
+            <!-- Close button at top-end -->
             <ImageButton
                 android:id="@+id/mobile_mini_close"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:layout_gravity="top|end"
-                android:layout_margin="0dp"
+                android:layout_margin="3dp"
                 android:background="@drawable/bg_mini_scrim_circle_touch"
                 android:contentDescription="@string/mobile_mini_close"
-                android:padding="15dp"
+                android:padding="10dp"
                 android:src="@drawable/ic_sheet_close"
                 android:tint="@color/mobile_player_on_video" />
 
@@ -329,7 +352,7 @@
                 android:id="@+id/mobile_mini_progress"
                 style="?android:attr/progressBarStyleHorizontal"
                 android:layout_width="match_parent"
-                android:layout_height="2dp"
+                android:layout_height="2.5dp"
                 android:layout_gravity="bottom"
                 android:max="1000"
                 android:progressBackgroundTint="@color/mobile_color_progress_track"

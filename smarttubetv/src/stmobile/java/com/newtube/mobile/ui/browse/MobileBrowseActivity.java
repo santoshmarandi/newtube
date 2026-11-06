@@ -439,7 +439,15 @@ public class MobileBrowseActivity extends MobileActivity
                         MiniPlayerBridge.expand(MobileBrowseActivity.this);
                     }
                 }, mMiniPlayerFrame, mMiniPlayerBar);
-        mMiniSwipe.setControlsViews(mMiniPlayPause, findViewById(R.id.mobile_mini_close), mMiniProgress);
+        View miniExpand = findViewById(R.id.mobile_mini_expand);
+        if (miniExpand != null) {
+            miniExpand.setOnClickListener(v -> {
+                publishMiniBounds();
+                MiniPlayerBridge.expand(MobileBrowseActivity.this);
+            });
+        }
+        mMiniSwipe.setControlsViews(mMiniPlayPause, findViewById(R.id.mobile_mini_close), mMiniProgress,
+                findViewById(R.id.mobile_mini_scrim), miniExpand);
     }
 
     /**

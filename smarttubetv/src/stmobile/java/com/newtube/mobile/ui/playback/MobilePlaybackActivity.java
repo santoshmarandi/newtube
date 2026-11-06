@@ -5710,8 +5710,8 @@ public class MobilePlaybackActivity extends MobileActivity
      * a 12dp shadow and swap in one frame for the rounded card on landing (and start square over a
      * rounded thumbnail on open).
      */
-    private static final float MORPH_CORNER_DP = 12f;
-    private static final float MORPH_ELEVATION_DP = 8f;
+    private static final float MORPH_CORNER_DP = 16f;
+    private static final float MORPH_ELEVATION_DP = 10f;
     /** Corner radius of the video box in its OWN coordinates: the morph scales it with the box. */
     private float mMorphCornerLocalPx;
     @Nullable

@@ -127,7 +127,15 @@ public final class MobileMiniPlayerController {
                 MiniPlayerBridge.expand(mActivity);
             }
         }, mFrame, mBar);
-        mSwipe.setControlsViews(mPlayPause, mClose, mProgress);
+        View miniExpand = activity.findViewById(R.id.mobile_mini_expand);
+        if (miniExpand != null) {
+            miniExpand.setOnClickListener(v -> {
+                publishBounds();
+                MiniPlayerBridge.expand(mActivity);
+            });
+        }
+        mSwipe.setControlsViews(mPlayPause, mClose, mProgress,
+                activity.findViewById(R.id.mobile_mini_scrim), miniExpand);
     }
 
     /**

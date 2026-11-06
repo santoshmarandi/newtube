@@ -708,15 +708,87 @@
                     tools:text="Video description text..."
                     tools:visibility="visible" />
 
+                <!-- Channel row: avatar + name/subs + Subscribe (YouTube-style, placed directly under title/meta). -->
+                <LinearLayout
+                    android:id="@+id/mobile_watch_channel_row"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
+                    android:layout_marginBottom="4dp"
+                    android:background="?attr/selectableItemBackground"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:paddingHorizontal="@dimen/mobile_watch_content_padding"
+                    android:paddingVertical="8dp">
+
+                    <ImageView
+                        android:id="@+id/mobile_watch_avatar"
+                        android:layout_width="@dimen/mobile_watch_avatar_size"
+                        android:layout_height="@dimen/mobile_watch_avatar_size"
+                        android:contentDescription="@null"
+                        android:src="@drawable/ic_watch_channel_placeholder" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="10dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/mobile_watch_channel_name"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:fontFamily="sans-serif-medium"
+                            android:maxLines="1"
+                            android:textColor="@color/mobile_color_on_surface"
+                            android:textSize="15sp"
+                            tools:text="Channel name" />
+
+                        <TextView
+                            android:id="@+id/mobile_watch_subs"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:ellipsize="end"
+                            android:maxLines="1"
+                            android:textColor="@color/mobile_color_on_surface_secondary"
+                            android:textSize="13sp"
+                            android:visibility="gone"
+                            tools:text="1.2M subscribers"
+                            tools:visibility="visible" />
+
+                    </LinearLayout>
+
+                    <com.google.android.material.button.MaterialButton
+                        android:id="@+id/mobile_watch_subscribe"
+                        style="@style/Widget.MaterialComponents.Button"
+                        android:layout_width="wrap_content"
+                        android:layout_height="36dp"
+                        android:layout_marginStart="8dp"
+                        android:backgroundTint="@color/mobile_color_inverse_surface"
+                        android:fontFamily="sans-serif-medium"
+                        android:insetTop="0dp"
+                        android:insetBottom="0dp"
+                        android:letterSpacing="0"
+                        android:minHeight="36dp"
+                        android:paddingHorizontal="16dp"
+                        android:paddingVertical="0dp"
+                        android:text="@string/mobile_watch_subscribe"
+                        android:textAllCaps="false"
+                        android:textColor="@color/mobile_color_on_inverse_surface"
+                        android:textSize="14sp"
+                        app:cornerRadius="18dp" />
+
+                </LinearLayout>
+
                 <!-- Actions row: segmented Like|Dislike pill (YouTube-style) + Share + Save.
                      Scrolls horizontally like YouTube's, so a fourth pill (or a wide count) can't
                      push an action off a narrow screen. -->
-                <!-- NEWTUBE(touch): no top margin - the meta row above (48dp tall now) and the pills'
-                     own 6dp inset hold the old spacing. -->
                 <HorizontalScrollView
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="0dp"
+                    android:layout_marginTop="2dp"
                     android:overScrollMode="never"
                     android:scrollbars="none">
 
@@ -907,81 +979,6 @@
 
                 </HorizontalScrollView>
 
-                <!-- Channel row: avatar + name/subs + Subscribe. Sections separate by
-                     whitespace, not hairline dividers (matches current YouTube).
-                     The row itself opens the channel page (Subscribe keeps its own click). -->
-                <LinearLayout
-                    android:id="@+id/mobile_watch_channel_row"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="0dp"
-                    android:background="?attr/selectableItemBackground"
-                    android:gravity="center_vertical"
-                    android:orientation="horizontal"
-                    android:paddingHorizontal="@dimen/mobile_watch_content_padding"
-                    android:paddingVertical="8dp">
-
-                    <ImageView
-                        android:id="@+id/mobile_watch_avatar"
-                        android:layout_width="@dimen/mobile_watch_avatar_size"
-                        android:layout_height="@dimen/mobile_watch_avatar_size"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_watch_channel_placeholder" />
-
-                    <LinearLayout
-                        android:layout_width="0dp"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="10dp"
-                        android:layout_weight="1"
-                        android:orientation="vertical">
-
-                        <TextView
-                            android:id="@+id/mobile_watch_channel_name"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:fontFamily="sans-serif-medium"
-                            android:maxLines="1"
-                            android:textColor="@color/mobile_color_on_surface"
-                            android:textSize="15sp"
-                            tools:text="Channel name" />
-
-                        <TextView
-                            android:id="@+id/mobile_watch_subs"
-                            android:layout_width="match_parent"
-                            android:layout_height="wrap_content"
-                            android:ellipsize="end"
-                            android:maxLines="1"
-                            android:textColor="@color/mobile_color_on_surface_secondary"
-                            android:textSize="13sp"
-                            android:visibility="gone"
-                            tools:text="1.2M subscribers"
-                            tools:visibility="visible" />
-
-                    </LinearLayout>
-
-                    <com.google.android.material.button.MaterialButton
-                        android:id="@+id/mobile_watch_subscribe"
-                        style="@style/Widget.MaterialComponents.Button"
-                        android:layout_width="wrap_content"
-                        android:layout_height="wrap_content"
-                        android:layout_marginStart="8dp"
-                        android:backgroundTint="@color/mobile_color_inverse_surface"
-                        android:fontFamily="sans-serif-medium"
-                        android:insetTop="4dp"
-                        android:insetBottom="4dp"
-                        android:letterSpacing="0"
-                        android:minHeight="48dp"
-                        android:paddingHorizontal="16dp"
-                        android:paddingVertical="0dp"
-                        android:text="@string/mobile_watch_subscribe"
-                        android:textAllCaps="false"
-                        android:textColor="@color/mobile_color_on_inverse_surface"
-                        android:textSize="14sp"
-                        app:cornerRadius="20dp" />
-
-                </LinearLayout>
-
                 <!-- Comments entry: opens the comments panel over this page. Hidden until the loaded
                      metadata reports that comments are enabled (a non-null comments key).
                      Rendered as a rounded surface card, like YouTube's comments teaser. -->
@@ -990,31 +987,26 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginHorizontal="@dimen/mobile_watch_content_padding"
-                    android:layout_marginTop="4dp"
+                    android:layout_marginTop="8dp"
+                    android:layout_marginBottom="4dp"
                     android:background="@drawable/bg_watch_card"
                     android:clickable="true"
                     android:focusable="true"
                     android:gravity="center_vertical"
                     android:orientation="horizontal"
                     android:paddingHorizontal="14dp"
-                    android:paddingVertical="13dp"
+                    android:paddingVertical="12dp"
                     android:visibility="gone"
                     tools:visibility="visible">
-
-                    <ImageView
-                        android:layout_width="22dp"
-                        android:layout_height="22dp"
-                        android:contentDescription="@null"
-                        android:src="@drawable/ic_watch_comment" />
 
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginStart="12dp"
                         android:fontFamily="sans-serif-medium"
                         android:text="@string/mobile_comments_entry"
                         android:textColor="@color/mobile_color_on_surface"
-                        android:textSize="14sp" />
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
 
                     <!-- NEWTUBE(comments-panel): the total from the same /next ("1.8K"). -->
                     <TextView
@@ -1026,12 +1018,12 @@
                         android:fontFeatureSettings="tnum"
                         android:maxLines="1"
                         android:textColor="@color/mobile_color_on_surface_secondary"
-                        android:textSize="14sp"
+                        android:textSize="13sp"
                         tools:text="1.8K" />
 
                     <ImageView
-                        android:layout_width="24dp"
-                        android:layout_height="24dp"
+                        android:layout_width="20dp"
+                        android:layout_height="20dp"
                         android:contentDescription="@null"
                         android:rotation="270"
                         android:src="@drawable/ic_watch_expand" />

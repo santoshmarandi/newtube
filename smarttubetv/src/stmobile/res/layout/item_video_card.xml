@@ -11,7 +11,9 @@
     android:id="@+id/video_card_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_margin="@dimen/mobile_card_spacing"
+    android:layout_marginHorizontal="@dimen/mobile_card_spacing"
+    android:layout_marginTop="4dp"
+    android:layout_marginBottom="16dp"
     android:checkable="false"
     android:clickable="true"
     android:focusable="true"
@@ -25,13 +27,13 @@
         android:layout_height="wrap_content">
 
         <!-- MaterialCardView (a FrameLayout) clips the thumbnail + badge + progress to rounded
-             corners; the watched-progress bar stays inside the rounded shape like YouTube. -->
+             corners (12dp) like the modern YouTube mobile app. -->
         <com.google.android.material.card.MaterialCardView
             android:id="@+id/video_thumbnail_frame"
             android:layout_width="0dp"
             android:layout_height="0dp"
             app:cardBackgroundColor="@color/mobile_color_placeholder"
-            app:cardCornerRadius="@dimen/mobile_card_corner_radius"
+            app:cardCornerRadius="12dp"
             app:cardElevation="0dp"
             app:layout_constraintDimensionRatio="16:9"
             app:layout_constraintEnd_toEndOf="parent"
@@ -50,10 +52,10 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:layout_gravity="bottom|end"
-                android:layout_margin="6dp"
+                android:layout_margin="8dp"
                 android:background="@drawable/bg_video_badge"
-                android:paddingHorizontal="5dp"
-                android:paddingVertical="2dp"
+                android:paddingHorizontal="6dp"
+                android:paddingVertical="3dp"
                 android:textColor="@android:color/white"
                 android:textSize="12sp"
                 android:textStyle="bold"
@@ -77,13 +79,12 @@
 
         <!-- NEWTUBE(feed-avatars): the channel's avatar, on Home and Subscriptions (the adapter
              shows it there). Tapping it opens the channel; the rest of the card still plays.
-             YouTube's size: 36 dp, 12 dp from the screen edge, 12 dp before the title. Centred on
-             the text beside it (owner, 2026-10-20), however many lines the title takes. -->
+             YouTube's size: 36 dp, 12 dp from the screen edge, 12 dp before the title. -->
         <ImageView
             android:id="@+id/video_channel_avatar"
             android:layout_width="@dimen/mobile_card_avatar_size"
             android:layout_height="@dimen/mobile_card_avatar_size"
-            android:layout_marginStart="4dp"
+            android:layout_marginStart="2dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:scaleType="centerCrop"
             android:src="@drawable/bg_card_avatar_placeholder"
@@ -105,22 +106,23 @@
             android:lineSpacingExtra="2sp"
             android:maxLines="2"
             android:textColor="@color/mobile_color_on_surface"
-            android:textSize="16sp"
+            android:textSize="15sp"
             app:layout_constraintEnd_toStartOf="@+id/video_overflow"
             app:layout_constraintStart_toEndOf="@id/video_channel_avatar"
             app:layout_constraintTop_toBottomOf="@id/video_thumbnail_frame"
-            app:layout_goneMarginStart="4dp"
+            app:layout_goneMarginStart="2dp"
             tools:text="A great video title that may wrap to two lines" />
 
         <!-- Overflow = same context menu as card long-press (VideoMenuPresenter: Not interested,
              Open channel, playlists, ...). Low-contrast so full-width cards stay calm. -->
         <ImageButton
             android:id="@+id/video_overflow"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_marginTop="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="@string/mobile_player_more"
-            android:padding="12dp"
+            android:padding="8dp"
             android:src="@drawable/ic_mobile_more_vert"
             app:layout_constraintEnd_toEndOf="parent"
             app:layout_constraintTop_toBottomOf="@id/video_thumbnail_frame" />
@@ -132,7 +134,7 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="3dp"
             android:layout_marginEnd="4dp"
-            android:layout_marginBottom="10dp"
+            android:layout_marginBottom="8dp"
             android:ellipsize="end"
             android:maxLines="1"
             android:textColor="@color/mobile_color_on_surface_secondary"
