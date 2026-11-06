@@ -43,7 +43,7 @@ public class MiniCardDragTest {
     }
 
     @Test
-    public void dragMovesCardAndUpdatesSavedPosition() {
+    public void dragAndSnapToCorner() {
         FrameLayout parent = new FrameLayout(RuntimeEnvironment.getApplication());
         parent.measure(
                 View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY),
@@ -89,22 +89,25 @@ public class MiniCardDragTest {
         card.dispatchTouchEvent(down);
         down.recycle();
 
-        // MOVE to (600, 1200) - dx = -200, dy = -500
-        MotionEvent move = MotionEvent.obtain(now, now + 50, MotionEvent.ACTION_MOVE, 600f, 1200f, 0);
+        // Drag towards upper-left: dx = -500, dy = -1000
+        MotionEvent move = MotionEvent.obtain(now, now + 50, MotionEvent.ACTION_MOVE, 300f, 700f, 0);
         card.dispatchTouchEvent(move);
         move.recycle();
 
-        assertEquals(-200f, card.getTranslationX(), 1f);
-        assertEquals(-500f, card.getTranslationY(), 1f);
+        assertEquals(-500f, card.getTranslationX(), 1f);
+        assertEquals(-1000f, card.getTranslationY(), 1f);
 
-        // UP
-        MotionEvent up = MotionEvent.obtain(now, now + 100, MotionEvent.ACTION_UP, 600f, 1200f, 0);
+        // UP: releases in upper-left quadrant -> should snap to Top-Left corner!
+        MotionEvent up = MotionEvent.obtain(now, now + 100, MotionEvent.ACTION_UP, 300f, 700f, 0);
         card.dispatchTouchEvent(up);
         up.recycle();
 
-        assertFalse("Card should not be swiped away on normal drag", swipedAway[0]);
+        assertFalse("Card should not be swiped away", swipedAway[0]);
         assertTrue("Position should be saved in MiniPlayerBridge", MiniPlayerBridge.hasSavedMiniPosition());
-        assertEquals(-200f, MiniPlayerBridge.getSavedMiniTranslationX(), 1f);
-        assertEquals(-500f, MiniPlayerBridge.getSavedMiniTranslationY(), 1f);
+
+        // Left corner translation = 12 - 700 = -688f
+        // Top corner translation = (56 + 12) - 1600 = -1532f
+        assertEquals(-688f, MiniPlayerBridge.getSavedMiniTranslationX(), 1f);
+        assertEquals(-1532f, MiniPlayerBridge.getSavedMiniTranslationY(), 1f);
     }
 }

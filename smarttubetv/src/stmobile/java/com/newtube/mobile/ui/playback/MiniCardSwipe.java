@@ -1,24 +1,30 @@
 package com.newtube.mobile.ui.playback;
 
 import android.annotation.SuppressLint;
+import android.content.Context;
+import android.view.GestureDetector;
 import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.VelocityTracker;
 import android.view.View;
 import android.view.ViewConfiguration;
 import android.view.ViewParent;
 
 import androidx.annotation.Nullable;
+import androidx.media3.exoplayer.ExoPlayer;
 
 import com.newtube.mobile.ui.common.Motion;
 
 /**
- * Drag the floating mini-player card anywhere across the screen, or swipe sideways to dismiss.
- *
- * <p>Taps expand the player (or trigger child controls like play/pause and close). Once touch
- * travels beyond slop, dragging takes over, moving the card freely in 2D across the viewport.
- * On release, a fast horizontal flick or dragging predominantly off-screen flings the card away
- * and notifies {@link Callback#onSwipedAway}; otherwise, the card settles smoothly within screen
- * boundaries, saving its position across host activities and playback minimize transitions.</p>
+ * YouTube-style floating mini-player controller:
+ * <ul>
+ *   <li>4-corner magnetic snapping with velocity physics.</li>
+ *   <li>Auto-hiding controls (Play/Pause, Close, Progress) after 2.5s of playback.</li>
+ *   <li>Single-tap: toggles controls or expands player when controls are visible.</li>
+ *   <li>Double-tap: resizes mini player between compact (1.0x) and enlarged (1.35x).</li>
+ *   <li>Pinch-to-zoom: fluid two-finger scaling.</li>
+ *   <li>Sideways fling or drag off-screen: smoothly dismisses player.</li>
+ * </ul>
  */
 public final class MiniCardSwipe implements View.OnTouchListener {
     public interface Callback {
@@ -30,12 +36,17 @@ public final class MiniCardSwipe implements View.OnTouchListener {
 
         /** Called when the card has been dragged to a new position. */
         default void onPositionChanged(float translationX, float translationY) {}
+
+        /** Called when user taps to expand the mini player back to full-screen watch page. */
+        default void onExpand() {}
     }
 
     private static final float FLING_VELOCITY_DP = 450f;
     private static final long FLY_MIN_MS = 110;
     private static final long FLY_MAX_MS = 240;
     private static final float MARGIN_DP = 12f;
+    private static final float TOP_BAR_DP = 56f;
+    private static final long AUTO_HIDE_DELAY_MS = 2500;
 
     private final View mCard;
     private final Callback mCallback;
@@ -51,7 +62,16 @@ public final class MiniCardSwipe implements View.OnTouchListener {
     @Nullable
     private VelocityTracker mVelocity;
 
-    /** Returns the swipe/drag handler, so the host can {@link #stop} it before moving the card itself. */
+    private final GestureDetector mGestureDetector;
+    private final ScaleGestureDetector mScaleDetector;
+    private float mCurrentScale = 1.0f;
+
+    private boolean mControlsVisible = true;
+    private final Runnable mAutoHideControls = this::hideControls;
+    @Nullable private View mPlayPauseView;
+    @Nullable private View mCloseView;
+    @Nullable private View mProgressView;
+
     public static MiniCardSwipe attach(View card, Callback callback, View... touchTargets) {
         MiniCardSwipe swipe = new MiniCardSwipe(card, callback);
         for (View target : touchTargets) {
@@ -62,25 +82,134 @@ public final class MiniCardSwipe implements View.OnTouchListener {
         return swipe;
     }
 
+    public void setControlsViews(@Nullable View playPause, @Nullable View close, @Nullable View progress) {
+        mPlayPauseView = playPause;
+        mCloseView = close;
+        mProgressView = progress;
+        scheduleAutoHide();
+    }
+
+    public boolean areControlsVisible() {
+        return mControlsVisible;
+    }
+
+    public void showControls() {
+        mControlsVisible = true;
+        animateControlsAlpha(1f);
+        scheduleAutoHide();
+    }
+
+    public void hideControls() {
+        ExoPlayer player = MiniPlayerBridge.getPlayer();
+        boolean isPlaying = player != null && player.isPlaying();
+        if (!isPlaying) {
+            // Keep controls visible while paused
+            return;
+        }
+        mControlsVisible = false;
+        animateControlsAlpha(0f);
+    }
+
+    private void animateControlsAlpha(float alpha) {
+        View[] views = new View[] {mPlayPauseView, mCloseView, mProgressView};
+        for (View v : views) {
+            if (v != null) {
+                v.animate().alpha(alpha).setDuration(180).start();
+            }
+        }
+    }
+
+    public void scheduleAutoHide() {
+        mCard.removeCallbacks(mAutoHideControls);
+        mCard.postDelayed(mAutoHideControls, AUTO_HIDE_DELAY_MS);
+    }
+
     public void stop() {
         if (mDragging) {
             mDragging = false;
             mIgnoring = true;
             recycleVelocity();
         }
+        mCard.removeCallbacks(mAutoHideControls);
         mCard.animate().cancel();
     }
 
     private MiniCardSwipe(View card, Callback callback) {
         mCard = card;
         mCallback = callback;
-        mTouchSlop = ViewConfiguration.get(card.getContext()).getScaledTouchSlop();
+        Context ctx = card.getContext();
+        mTouchSlop = ViewConfiguration.get(ctx).getScaledTouchSlop();
         mFlingVelocity = FLING_VELOCITY_DP * card.getResources().getDisplayMetrics().density;
+
+        mGestureDetector = new GestureDetector(ctx, new GestureDetector.SimpleOnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent e) {
+                return false;
+            }
+
+            @Override
+            public boolean onSingleTapConfirmed(MotionEvent e) {
+                if (!mControlsVisible) {
+                    showControls();
+                    return true;
+                }
+                mCallback.onExpand();
+                return true;
+            }
+
+            @Override
+            public boolean onDoubleTap(MotionEvent e) {
+                toggleScale();
+                return true;
+            }
+        });
+
+        mScaleDetector = new ScaleGestureDetector(ctx, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                mCurrentScale *= detector.getScaleFactor();
+                mCurrentScale = Math.max(1.0f, Math.min(1.45f, mCurrentScale));
+                mCard.setScaleX(mCurrentScale);
+                mCard.setScaleY(mCurrentScale);
+                return true;
+            }
+
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+                mCurrentScale = (mCurrentScale > 1.18f) ? 1.35f : 1.0f;
+                mCard.animate().scaleX(mCurrentScale).scaleY(mCurrentScale)
+                        .setDuration(180).setInterpolator(Motion.EMPHASIZED).start();
+            }
+        });
+    }
+
+    private void toggleScale() {
+        mCurrentScale = (mCurrentScale > 1.15f) ? 1.0f : 1.35f;
+        updatePivotForCorner(mCard.getTranslationX(), mCard.getTranslationY());
+        mCard.animate()
+                .scaleX(mCurrentScale)
+                .scaleY(mCurrentScale)
+                .setDuration(220)
+                .setInterpolator(Motion.EMPHASIZED)
+                .start();
     }
 
     @SuppressLint("ClickableViewAccessibility")
     @Override
     public boolean onTouch(View view, MotionEvent event) {
+        if (!mCallback.canSwipe()) {
+            return false;
+        }
+
+        mScaleDetector.onTouchEvent(event);
+        if (mScaleDetector.isInProgress()) {
+            mDragging = false;
+            mIgnoring = true;
+            return true;
+        }
+
+        mGestureDetector.onTouchEvent(event);
+
         switch (event.getActionMasked()) {
             case MotionEvent.ACTION_DOWN:
                 mDownRawX = event.getRawX();
@@ -93,7 +222,8 @@ public final class MiniCardSwipe implements View.OnTouchListener {
                 mVelocity = VelocityTracker.obtain();
                 trackVelocity(event);
                 mCard.animate().cancel();
-                return false; // View still sees the press (ripple, click)
+                showControls();
+                return false;
 
             case MotionEvent.ACTION_MOVE: {
                 if (mIgnoring) {
@@ -103,11 +233,10 @@ public final class MiniCardSwipe implements View.OnTouchListener {
                 float dx = event.getRawX() - mDownRawX;
                 float dy = event.getRawY() - mDownRawY;
                 if (!mDragging) {
-                    if (Math.hypot(dx, dy) <= mTouchSlop || !mCallback.canSwipe()) {
+                    if (Math.hypot(dx, dy) <= mTouchSlop) {
                         return false;
                     }
                     mDragging = true;
-                    // Cancel press on the touched view so click/ripple does not fire on release
                     MotionEvent cancel = MotionEvent.obtain(event);
                     cancel.setAction(MotionEvent.ACTION_CANCEL);
                     view.onTouchEvent(cancel);
@@ -159,7 +288,7 @@ public final class MiniCardSwipe implements View.OnTouchListener {
                     mDragging = false;
                     mIgnoring = true;
                     recycleVelocity();
-                    settleWithinBounds();
+                    snapToNearestCorner(0f, 0f);
                 }
                 return mIgnoring;
 
@@ -168,7 +297,7 @@ public final class MiniCardSwipe implements View.OnTouchListener {
                 mIgnoring = false;
                 if (mDragging) {
                     mDragging = false;
-                    settleWithinBounds();
+                    snapToNearestCorner(0f, 0f);
                     return true;
                 }
                 return false;
@@ -203,29 +332,61 @@ public final class MiniCardSwipe implements View.OnTouchListener {
             return;
         }
 
-        settleWithinBounds();
+        snapToNearestCorner(velocityX, velocityY);
     }
 
-    private void settleWithinBounds() {
+    public void snapToNearestCorner(float velocityX, float velocityY) {
         float minTx = getMinTranslationX();
-        float maxTx = 0f;
         float minTy = getMinTranslationY();
-        float maxTy = 0f;
+        float midX = minTx / 2f;
+        float midY = minTy / 2f;
 
-        float finalTx = Math.max(minTx, Math.min(maxTx, mCard.getTranslationX()));
-        float finalTy = Math.max(minTy, Math.min(maxTy, mCard.getTranslationY()));
+        float targetTx;
+        float targetTy;
 
-        MiniPlayerBridge.setSavedMiniPosition(finalTx, finalTy);
-        mCallback.onPositionChanged(finalTx, finalTy);
-
-        if (mCard.getTranslationX() != finalTx || mCard.getTranslationY() != finalTy) {
-            mCard.animate()
-                    .translationX(finalTx)
-                    .translationY(finalTy)
-                    .setDuration(180)
-                    .setInterpolator(Motion.EMPHASIZED)
-                    .start();
+        if (velocityX < -mFlingVelocity) {
+            targetTx = minTx;
+        } else if (velocityX > mFlingVelocity) {
+            targetTx = 0f;
+        } else {
+            targetTx = (mCard.getTranslationX() < midX) ? minTx : 0f;
         }
+
+        if (velocityY < -mFlingVelocity) {
+            targetTy = minTy;
+        } else if (velocityY > mFlingVelocity) {
+            targetTy = 0f;
+        } else {
+            targetTy = (mCard.getTranslationY() < midY) ? minTy : 0f;
+        }
+
+        updatePivotForCorner(targetTx, targetTy);
+
+        MiniPlayerBridge.setSavedMiniPosition(targetTx, targetTy);
+        mCallback.onPositionChanged(targetTx, targetTy);
+
+        mCard.animate()
+                .translationX(targetTx)
+                .translationY(targetTy)
+                .setDuration(240)
+                .setInterpolator(Motion.EMPHASIZED)
+                .start();
+
+        scheduleAutoHide();
+    }
+
+    private void updatePivotForCorner(float tx, float ty) {
+        float minTx = getMinTranslationX();
+        float minTy = getMinTranslationY();
+
+        boolean isLeft = Math.abs(tx - minTx) < Math.abs(tx);
+        boolean isTop = Math.abs(ty - minTy) < Math.abs(ty);
+
+        float pivotX = isLeft ? 0f : mCard.getWidth();
+        float pivotY = isTop ? 0f : mCard.getHeight();
+
+        mCard.setPivotX(pivotX);
+        mCard.setPivotY(pivotY);
     }
 
     private float getMarginPx() {
@@ -256,14 +417,15 @@ public final class MiniCardSwipe implements View.OnTouchListener {
     }
 
     private float getMinTranslationY() {
-        float margin = getMarginPx();
+        float density = mCard.getResources().getDisplayMetrics().density;
+        float topInset = (TOP_BAR_DP + MARGIN_DP) * density;
         float top = mCard.getTop();
         if (top <= 0) {
             int cardH = mCard.getHeight() > 0 ? mCard.getHeight()
-                    : Math.round(102f * mCard.getResources().getDisplayMetrics().density);
-            return -(getParentHeight() - cardH - margin);
+                    : Math.round(102f * density);
+            return -(getParentHeight() - cardH - topInset);
         }
-        return margin - top;
+        return topInset - top;
     }
 
     private void recycleVelocity() {

@@ -88,15 +88,28 @@ public final class MobileMiniPlayerController {
         mFrame.setOnClickListener(expand);
 
         mPlayPause.setOnClickListener(v -> {
+            if (mSwipe != null && !mSwipe.areControlsVisible()) {
+                mSwipe.showControls();
+                return;
+            }
             ExoPlayer player = MiniPlayerBridge.getPlayer();
             if (player != null) {
                 player.setPlayWhenReady(!player.getPlayWhenReady());
                 updatePlayPause(player);
+                if (mSwipe != null) {
+                    mSwipe.scheduleAutoHide();
+                }
             }
         });
 
-        mClose.setOnClickListener(v -> close());
-        // NEWTUBE(motion): or drag the card anywhere / swipe away sideways.
+        mClose.setOnClickListener(v -> {
+            if (mSwipe != null && !mSwipe.areControlsVisible()) {
+                mSwipe.showControls();
+                return;
+            }
+            close();
+        });
+        // NEWTUBE(motion): YouTube-style floating mini-player with 4-corner snap, auto-hide, resize & swipe.
         mSwipe = MiniCardSwipe.attach(mBar, new MiniCardSwipe.Callback() {
             @Override
             public boolean canSwipe() {
@@ -107,7 +120,14 @@ public final class MobileMiniPlayerController {
             public void onSwipedAway(float toTranslationX, long durationMs) {
                 close(toTranslationX, durationMs);
             }
-        }, mFrame, mBar, mPlayPause);
+
+            @Override
+            public void onExpand() {
+                publishBounds();
+                MiniPlayerBridge.expand(mActivity);
+            }
+        }, mFrame, mBar);
+        mSwipe.setControlsViews(mPlayPause, mClose, mProgress);
     }
 
     /**
@@ -231,6 +251,9 @@ public final class MobileMiniPlayerController {
         attachTexture();
         mBar.setVisibility(View.VISIBLE);
         updatePlayPause(player);
+        if (mSwipe != null) {
+            mSwipe.showControls();
+        }
 
         Utils.removeCallbacks(mTick);
         Utils.postDelayed(mTick, TICK_MS);
@@ -481,8 +504,10 @@ public final class MobileMiniPlayerController {
         }
         int[] location = new int[2];
         mBar.getLocationOnScreen(location);
+        int w = Math.round(mBar.getWidth() * mBar.getScaleX());
+        int h = Math.round(mBar.getHeight() * mBar.getScaleY());
         MiniPlayerBridge.setMiniBounds(new Rect(location[0], location[1],
-                location[0] + mBar.getWidth(), location[1] + mBar.getHeight()));
+                location[0] + w, location[1] + h));
     }
 
     private void onTick() {
